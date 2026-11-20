@@ -1,15 +1,11 @@
-/* CONFIGURACIÓN: editá estos valores para personalizar la invitación. */
+/* Configuración de la invitación Cami & Agus. */
 const CONFIG = {
-  // Formato internacional sin + ni espacios. Ejemplo: 549XXXXXXXXXX
-  whatsappNumber: "",
-  whatsappMessage: "Hola Cami y Agus. ¡Confirmo mi asistencia a su boda del 3 de abril de 2027!",
-  // Hora local de Argentina. Reemplazá 00:00 si ya conocen el horario de inicio.
+  whatsappNumber: "5493547546814",
+  whatsappMessage: "Hola Cami y Agus! confirmo mi asistencia!\n\nNombre:\n\nPagado: sí o no",
   eventDate: "2027-04-03T00:00:00-03:00",
-  mapsAddress: "Espacio Los Colibríes, Calle Bernabé Garro 151, barrio Los Talas, Anisacate, Córdoba, Argentina",
-  // Agregá regalos reales cuando tengan sus enlaces. No se muestran productos de ejemplo.
-  gifts: [
-    // { name: "Nombre del regalo", description: "Descripción breve.", price: "$ 00.000", image: "URL_DE_IMAGEN", url: "https://www.mercadolibre.com.ar/..." }
-  ]
+  mapsUrl: "https://www.google.com/maps?q=-31.7464167,-64.3921389",
+  giftListUrl: "https://www.wishbob.com/fjsizvahyx",
+  transferAlias: "CAMIAGUSINVITACIONES"
 };
 
 const intro = document.getElementById("intro");
@@ -26,59 +22,49 @@ openButton.addEventListener("click", () => {
 });
 document.body.style.overflow = "hidden";
 
-const maps = document.getElementById("mapsLink");
-maps.href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(CONFIG.mapsAddress);
-
+document.getElementById("mapsLink").href = CONFIG.mapsUrl;
+document.getElementById("wishbobLink").href = CONFIG.giftListUrl;
 const whatsapp = document.getElementById("whatsappLink");
-function configureWhatsApp() {
-  if (CONFIG.whatsappNumber.trim()) {
-    const number = CONFIG.whatsappNumber.replace(/\D/g, "");
-    whatsapp.href = `https://wa.me/${number}?text=${encodeURIComponent(CONFIG.whatsappMessage)}`;
-    whatsapp.removeAttribute("aria-disabled");
-  } else {
-    whatsapp.href = "https://wa.me/?text=" + encodeURIComponent(CONFIG.whatsappMessage);
-    whatsapp.title = "Configurá el número de WhatsApp en script.js para dirigir la confirmación a Cami y Agus.";
-  }
-}
-configureWhatsApp();
+whatsapp.href = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(CONFIG.whatsappMessage)}`;
 
 function updateCountdown() {
-  // El instante incluye el offset UTC-3 para que el contador use siempre la hora argentina.
-  const target = new Date(CONFIG.eventDate).getTime();
-  const remaining = Math.max(0, target - Date.now());
-  const days = Math.floor(remaining / 86400000);
-  const hours = Math.floor((remaining % 86400000) / 3600000);
-  const minutes = Math.floor((remaining % 3600000) / 60000);
-  const seconds = Math.floor((remaining % 60000) / 1000);
-  document.getElementById("days").textContent = String(days).padStart(3, "0");
-  document.getElementById("hours").textContent = String(hours).padStart(2, "0");
-  document.getElementById("minutes").textContent = String(minutes).padStart(2, "0");
-  document.getElementById("seconds").textContent = String(seconds).padStart(2, "0");
+  const remaining = Math.max(0, new Date(CONFIG.eventDate).getTime() - Date.now());
+  const values = {
+    days: Math.floor(remaining / 86400000),
+    hours: Math.floor((remaining % 86400000) / 3600000),
+    minutes: Math.floor((remaining % 3600000) / 60000),
+    seconds: Math.floor((remaining % 60000) / 1000)
+  };
+  Object.entries(values).forEach(([id, value]) => {
+    document.getElementById(id).textContent = String(value).padStart(id === "days" ? 3 : 2, "0");
+  });
 }
 updateCountdown();
 window.setInterval(updateCountdown, 1000);
 
-const giftGrid = document.getElementById("giftGrid");
-const giftPlaceholder = document.getElementById("giftPlaceholder");
-if (CONFIG.gifts.length) {
-  giftPlaceholder.hidden = true;
-  CONFIG.gifts.forEach((gift) => {
-    const card = document.createElement("article");
-    card.className = "gift-card";
-    const image = document.createElement("img");
-    image.src = gift.image || "";
-    image.alt = gift.name || "Regalo para el hogar";
-    image.loading = "lazy";
-    const content = document.createElement("div");
-    content.className = "gift-card-content";
-    const title = document.createElement("h3"); title.textContent = gift.name;
-    const desc = document.createElement("p"); desc.textContent = gift.description || "";
-    content.append(title, desc);
-    if (gift.price) { const price = document.createElement("div"); price.className = "gift-price"; price.textContent = gift.price; content.append(price); }
-    const link = document.createElement("a"); link.href = gift.url; link.target = "_blank"; link.rel = "noopener"; link.textContent = "Ver regalo ↗";
-    content.append(link); card.append(image, content); giftGrid.append(card);
-  });
-}
+const copyButton = document.getElementById("copyAlias");
+copyButton.addEventListener("click", async () => {
+  const feedback = document.getElementById("copyFeedback");
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(CONFIG.transferAlias);
+    } else {
+      const helper = document.createElement("textarea");
+      helper.value = CONFIG.transferAlias;
+      helper.setAttribute("readonly", "");
+      helper.style.position = "absolute";
+      helper.style.left = "-9999px";
+      document.body.appendChild(helper);
+      helper.select();
+      const copied = document.execCommand("copy");
+      helper.remove();
+      if (!copied) throw new Error("No se pudo copiar");
+    }
+    feedback.textContent = "Alias copiado";
+  } catch {
+    feedback.textContent = "No se pudo copiar. Podés seleccionar el alias.";
+  }
+});
 
 if ("IntersectionObserver" in window && !reduceMotion) {
   const observer = new IntersectionObserver((entries) => {
@@ -90,6 +76,16 @@ if ("IntersectionObserver" in window && !reduceMotion) {
     });
   }, {threshold: 0.14});
   document.querySelectorAll(".reveal").forEach((element) => observer.observe(element));
+  const photoBreak = document.querySelector(".photo-break");
+  if (photoBreak) {
+    const photoObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        photoBreak.classList.toggle("photo-visible", entry.isIntersecting);
+      });
+    }, {threshold: 0.12});
+    photoObserver.observe(photoBreak);
+  }
 } else {
   document.querySelectorAll(".reveal").forEach((element) => element.classList.add("visible"));
+  document.querySelector(".photo-break")?.classList.add("photo-visible");
 }
